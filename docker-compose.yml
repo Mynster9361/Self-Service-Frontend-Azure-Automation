@@ -1,0 +1,18 @@
+version: "3"
+services:
+  azure_self_service_portal:
+    build: ./
+    ports:
+      - 8000:8000
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=Europe/London
+      - TENANT_ID=
+      - CLIENT_ID=
+      - CLIENT_SECRET=
+      - SUBSCRIPTION_ID=
+      - RESOURCE_GROUP_NAME=
+      - AUTOMATION_ACCOUNT_NAME=
+      - REDIRECT_PATH=
+    command: "src/app.py"

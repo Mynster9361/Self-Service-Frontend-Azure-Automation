@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ runbook.name }}
+{% endblock %}
+
+{% block content %}
+<h1>{{ runbook.name }}</h1>
+<hr>
+
+<div style="display: flex; flex-direction: column; align-items: center;">
+    <div class="card" style="width: 80%; max-width: 750px;">
+        <div class="p-3">
+            <div class="row">
+                <div class="mb-3 d-flex flex-column align-items-center">
+                    <div class="width: 80%; max-width: 500px;">
+                        <h5 class="card-title">{{ runbook.name }}</h5>
+                        <p class="card-text">{{ runbook.description }}</p>
+                    </div>
+                </div>
+            </div>
+            <hr>
+
+            <!-- Display the form elements -->
+            <form action="/selfservice/{{ runbook.name }}/run" method="POST">
+                {% for param, details in runbook.parameters.items() %}
+                    {% if details.enabled == "on" %}
+                    <div class="mb-3 d-flex flex-column align-items-center">
+                        <div style="width: 80%; max-width: 500px;">
+                            <label for="{{ param }}" class="form-label">{{ details.friendlyname if details.friendlyname else param }}</label>
+                            {% if details.type == "System.String" %}
+                            <input type="text" class="form-control" id="{{ param }}" name="{{ param }}" value="{% if details.defaultValue != '$null' and details.defaultValue != 'null' and details.defaultValue != None %}{{ details.defaultValue }}{% endif %}" {% if details.isMandatory %}required{% endif %}>
+                            {% elif details.type == "System.Int32" %}
+                            <input type="number" class="form-control" id="{{ param }}" name="{{ param }}" value="{% if details.defaultValue != '$null' and details.defaultValue != 'null' and details.defaultValue != None %}{{ details.defaultValue }}{% endif %}" {% if details.isMandatory %}required{% endif %}>
+                            {% elif details.type == "System.Boolean" %}
+                            <select class="form-control" id="{{ param }}" name="{{ param }}" {% if details.isMandatory %}required{% endif %}>
+                                <option value="true" {% if details.defaultValue != '$null' and details.defaultValue != 'null' and details.defaultValue == true %}selected{% endif %}>True</option>
+                                <option value="false" {% if details.defaultValue != '$null' and details.defaultValue != 'null' and details.defaultValue == false %}selected{% endif %}>False</option>
+                            </select>
+                            {% elif details.type == "System.String[]" or details.type == "System.Array" %}
+                            <textarea class="form-control" id="{{ param }}" name="{{ param }}" rows="3" {% if details.isMandatory %}required{% endif %}>{% if details.defaultValue != '$null' and details.defaultValue != 'null' and details.defaultValue != None %}{{ details.defaultValue|join('\n') }}{% endif %}</textarea>
+                            {% elif details.type == "System.Object" %}
+                            <input type="text" class="form-control" id="{{ param }}" name="{{ param }}" placeholder="Enter JSON string" value="{% if details.defaultValue != '$null' and details.defaultValue != 'null' and details.defaultValue != None %}{{ details.defaultValue }}{% endif %}" {% if details.isMandatory %}required{% endif %}>
+                            {% endif %}
+                            
+                            {% if loop.last %}
+                            {% if runbook.schedule_checkbox %}
+                            <div class="mt-3">
+                                <label class="form-label" for="scheduleDateTime">Schedule Date and Time:</label>
+                                <input class="form-control" type="datetime-local" id="scheduleDateTime" name="scheduleDateTime">
+                                <label id="warningLabel" class="form-label text-danger"></label>
+                            </div>
+
+                            {% endif %}
+                            <div style="display: flex; justify-content: flex-end;">
+                                <button type="submit" class="btn btn-primary mt-3" id="submitBtn" disabled>Submit</button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </form>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('form').on('submit', function() {
+        $('#submitBtn').prop('disabled', true);
+        $('#submitBtn').html('Submitting...');
+    });
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var requiredFields = document.querySelectorAll('input[required], select[required], textarea[required]');
+    requiredFields.forEach(function(field) {
+        field.classList.add('empty');
+        field.addEventListener('input', function() {
+            if (field.value.trim() === '') {
+                field.classList.add('empty');
+            } else {
+                field.classList.remove('empty');
+            }
+        });
+        // Check if the field already has a value
+        if (field.value.trim() !== '') {
+            field.classList.remove('empty');
+        }
+    });
+});
+// Get the input field, the warning label, and the submit button
+var input = document.getElementById("scheduleDateTime");
+var warningLabel = document.getElementById("warningLabel");
+var submitBtn = document.getElementById("submitBtn");
+
+// Get all required input fields
+var requiredInputs = document.querySelectorAll('input[required],textarea[required],select[required]');
+
+// Function to check if all required input fields are filled
+function checkRequiredInputs() {
+    for (var i = 0; i < requiredInputs.length; i++) {
+        if (requiredInputs[i].value === '') {
+            return false;
+        }
+    }
+    // If the date and time input field is present, also check if a valid date and time has been selected
+    if (input && input.value === '') {
+        return false;
+    }
+    return true;
+}
+
+// Add event listeners to the required input fields
+for (var i = 0; i < requiredInputs.length; i++) {
+    requiredInputs[i].addEventListener('input', function() {
+        submitBtn.disabled = !checkRequiredInputs();
+    });
+}
+
+// If the schedule date and time input field is not present, enable the submit button
+if (!input) {
+    submitBtn.disabled = !checkRequiredInputs();
+} else {
+    // Calculate the minimum datetime
+    var dt = new Date();
+    dt.setMinutes(dt.getMinutes() + 30);
+
+    // Convert the minimum datetime to AM/PM format
+    var minDateTimeAMPM = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    // Convert the minimum datetime to ISO format for the input field's min attribute
+    var minDateTimeISO = dt.toISOString().slice(0,16);
+
+    // Set the minimum datetime as the input field's min attribute
+    input.min = minDateTimeISO;
+
+    // Update the warning label
+    warningLabel.textContent = "You need to book it at least 30 minutes into the future. The earliest time you can set is " + minDateTimeAMPM;
+
+    // Add an event listener to the input field
+    input.addEventListener("change", function() {
+        // Get the selected datetime
+        var selectedDateTime = new Date(input.value);
+
+        // If the selected datetime is at least 30 minutes in the future and all required input fields are filled, enable the submit button and clear the warning label
+        if (selectedDateTime >= dt && checkRequiredInputs()) {
+            submitBtn.disabled = false;
+            warningLabel.textContent = "";
+        } else {
+            submitBtn.disabled = true;
+            warningLabel.textContent = "You need to book it at least 30 minutes into the future. The earliest time you can set is " + minDateTimeAMPM;
+        }
+    });
+}
+
+    </script>
+    <style>
+        .empty {
+        border-color: red;
+    }
+    </style>
+{% endblock %}

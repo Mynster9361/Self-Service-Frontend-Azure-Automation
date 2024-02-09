@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}
+Logs
+{% endblock %}
+
+{% block content %}
+<h1>Logs</h1>
+<hr>
+
+<div class="table-responsive min-height-custom" style="min-height:300px;">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th scope="col" class="col-1">Timestamp</th>
+                <th scope="col" class="col-1">
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      Type
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="filter('All')">All</a></li>
+                        {% for type in types %}
+                            <li><a class="dropdown-item" href="#" onclick="filter('{{ type }}')">{{ type }}</a></li>
+                        {% endfor %}
+                    </ul>
+                  </div>
+                </th>
+                <th scope="col">User</th>
+                <th scope="col">Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in data %}
+            <tr data-timestamp="{{ log.timestamp }}" data-type="{{ log.type }}">
+                <td>{{ log.timestamp }}</td>
+                <td>{{ log.type }}</td>
+                <td>{{ log.user }}</td>
+                <td>{{ log.message }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+
+{% endblock %}
+{% block scripts %}
+<style>
+    .min-height-custom {
+        min-height: 300px !important; /* Replace with the height you want */
+    }
+    </style>
+<script>
+    function filter(type) {
+        // Get all rows in the table body
+        var tbody = document.querySelector('tbody');
+        var rows = tbody.getElementsByTagName('tr');
+
+        // Loop through each row
+        for (var i = 0; i < rows.length; i++) {
+            // Get the type of the current row
+            var rowType = rows[i].getAttribute('data-type');
+
+            // If the selected type is 'All', or the row type matches the selected type, show the row. Otherwise, hide it.
+            if (type === 'All' || rowType === type) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    }
+</script>
+{% endblock %}

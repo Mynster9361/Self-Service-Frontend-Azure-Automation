@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}
+Publish
+{% endblock %}
+
+{% block content %}
+<h1>Publish</h1>
+<hr>
+
+<div style="display: flex; flex-direction: column; align-items: center;">
+    <div class="card" style="width: 80%; max-width: 750px;">
+        <div class="p-3">
+            <!-- Add the URL of your backend endpoint to the action attribute -->
+            <form method="POST" action="/publish_selfservice">
+                <div class="row">
+                    <div class="mb-3 d-flex flex-column align-items-center">
+                        <div style="width: 80%; max-width: 500px;">
+                            <label for="runbook_name">Runbook:</label>
+                            <select id="runbook_name" name="runbook_name" class="form-control" required>
+                                {% for runbook in runbooks %}
+                                    <option value="{{ runbook.name }}" {% if runbook.name == name %}selected{% endif %}>{{ runbook.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <!-- Parameters will be inserted here -->
+                <div id="parameters"></div>
+                <!-- Field for comma-separated list of groups -->
+                <div class="mb-3">
+                    <label for="groups">Groups:</label>
+                    <input type="text" id="groups" name="groups" class="form-control" placeholder="Enter groups, separated by commas">
+                </div>
+                <div class="mb-3">
+                    <input type="checkbox" id="schedule_checkbox" name="schedule_checkbox">
+                    <label for="schedule_checkbox">Include Scheduling</label>
+                    <span class="info" title="This should be checked if you would like users using this self service to schedule it into the future">?</span>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="submit" class="btn btn-primary mt-3">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#runbook_name').change(function() {
+        var name = $(this).val();
+
+        // Fetch the parameters of the selected runbook
+        $.getJSON('/runbook/' + name, function(parameters) {
+            // Clear the previous parameters
+            $('#parameters').empty();
+
+            // Check if there are any parameters
+            if ($.isEmptyObject(parameters)) {
+                // No parameters, display a message
+                $('#parameters').append('<p>No parameters available.</p>');
+            } else {
+                // Create the help message
+                var helpMessage = $('<span class="info" title="Enter a user-friendly name for this parameter. This name will be displayed to the users instead of the technical parameter name.">?</span>');
+
+                // Create the table if it doesn't exist
+                if ($('#parameters table').length === 0) {
+                    $('#parameters').append(
+                        $('<table class="table">').append(
+                            $('<thead>').append(
+                                $('<tr>').append(
+                                    $('<th>').text('Include'),
+                                    $('<th>').text('Param Name'),
+                                    $('<th>').append(
+                                        'User-friendly Name',
+                                        helpMessage
+                                    )
+                                )
+                            ),
+                            $('<tbody>')
+                        )
+                    );
+                }
+
+                // Add a checkbox and an input field for each parameter
+                $.each(parameters, function(name, details) {
+                    // Create a checkbox
+                    var checkbox = $('<input type="checkbox" id="' + name + '_checkbox" name="' + name + '_enabled" checked>');
+
+                    // Create an input field for the user-friendly name
+                    var input = $('<input type="text" id="' + name + '_input" name="' + name + '_friendlyname" class="form-control" placeholder="user-friendly name">');
+
+                    // Add a row for each parameter
+                    $('#parameters table tbody').append(
+                        $('<tr>').append(
+                            $('<td>').append(
+                                checkbox,
+                                $('<label for="' + name + '_checkbox" class="form-check-label"></label>')
+                            ),
+                            $('<td>').append(
+                                $('<label for="' + name + '_checkbox" class="form-label">' + name + '</label>')
+                            ),
+                            $('<td>').append(
+                                input
+                            )
+                        )
+                    );
+                });
+            }
+        });
+    }).change();  // Trigger the change event manually
+});
+</script>
+<style>
+    .info {
+    display: inline-block;
+    margin-left: 5px;
+    width: 15px;
+    height: 15px;
+    background-color: #ddd;
+    color: #333;
+    text-align: center;
+    line-height: 15px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+</style>
+{% endblock %}

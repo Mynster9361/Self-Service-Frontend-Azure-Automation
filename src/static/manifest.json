@@ -1,0 +1,16 @@
+{
+  "name": "Azure Self Service Portal",
+  "short_name": "ASSP",
+  "description": "Self service platform for Azure Automation. Works as a frontend for your runbooks.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#242526",
+  "theme_color": "#242526",
+  "icons": [
+    {
+      "src": "/static/images/banner-192.webp",
+      "sizes": "192x128",
+      "type": "image/webp"
+    }
+  ]
+}

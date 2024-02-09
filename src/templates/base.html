@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="">
+
+<head>
+    <script src="/static/js/darkmode.js"></script>
+    <script src="/static/js/logo.js"></script>
+    <title>{% block title %}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8">
+    <meta name="description"
+        content="Self service platform for Azure Automation. Works as a frontend for your runbooks.">
+    <meta name="keywords" content="Azure, Automation, Runbooks, Self Service">
+    <meta name="author" content="Morten Mynster">
+    <meta name="theme-color" content="#242526">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+</head>
+
+<body class="overflow-auto">
+    <div class="container-fluid">
+        <div class="row" style="min-height: 10% !important;">
+            <div class="col-1">
+                <a href="/" class="d-flex justify-content-center">
+                    <img id="bannerImage" alt="Logo" class="mt-2 rounded" src="/static/images/banner-192.webp">
+                </a>
+                <hr>
+            </div>
+            <div class="col-10">
+            </div>
+            <div class="col-1 mt-2">
+                <div class="col-auto ml-auto">
+                    <button class="btn shadow" id="btnSwitch" title="Switch between light and dark mode.">
+                        <i class="bi bi-moon-stars-fill"></i>
+                    </button>
+                    <script>
+                        // Immediately get the theme from localStorage when the script runs
+                        const icon = document.querySelector('#btnSwitch i');
+                        if (theme == 'dark') {
+                            icon.classList.remove('bi-moon-stars-fill');
+                            icon.classList.add('bi-brightness-high-fill');
+                            icon.title = 'Switch to light mode';
+                        } else {
+                            icon.classList.remove('bi-brightness-high-fill');
+                            icon.classList.add('bi-moon-stars-fill');
+                            icon.title = 'Switch to dark mode';
+                        }
+
+
+                    </script>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-1" style="min-width: 220px !important;">
+                <ul class="nav nav-pills flex-column mb-auto">
+                    <li class="nav-item">
+                        <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}" aria-current="page">
+                            Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/selfservices"
+                            class="nav-link {% if request.path == '/selfservices' %}active{% endif %}">
+                            Self Services
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/jobs" class="nav-link {% if request.path == '/jobs' %}active{% endif %}">
+                            Jobs
+                        </a>
+                    </li>
+                    {% if 'admin' in user["roles"] %}
+                    <li class="nav-item">
+                        <a href="/runbooks" class="nav-link {% if request.path == '/runbooks' %}active{% endif %}">
+                            All Runbooks
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/publish" class="nav-link {% if request.path == '/publish' %}active{% endif %}">
+                            Publish new Runbook
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/logs" class="nav-link {% if request.path == '/logs' %}active{% endif %}">
+                            Logs
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+
+            </div>
+            <div class="col-10">
+                <div class="col-11">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@latest/sortable.min.js"></script>
+    <script src="{{ url_for('static', filename='js/darkmode_button.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+<style>
+    html {
+        overflow-y: scroll !important;
+    }
+</style>
+</html>

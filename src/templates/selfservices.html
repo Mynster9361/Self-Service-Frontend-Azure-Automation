@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if request.path == "/runbooks" %}
+All Runbooks
+{% elif request.path == "/selfservices" %}
+Self Services
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if request.path == "/runbooks" %}
+<div class="d-flex align-items-center">
+    <h1>All Runbooks</h1>
+    <a href="/update_runbooks" style="margin-left: 20px;">
+        <button type="button" class="btn btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"></path>
+                <path
+                    d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466">
+                </path>
+            </svg>
+            <span>Refresh All Runbooks</span>
+        </button>
+    </a>
+</div>
+{% elif request.path == "/selfservices" %}
+<h1>Self Services</h1>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <input class="form-control" id="search" type="text" placeholder="Search..." autocomplete="off">
+    </div>
+</div>
+<hr>
+
+<div class="row">
+    {% for self_service in data|sort(attribute='name') %}
+    {% if request.path == "/runbooks" %}
+    <div class="col-md-4 mb-3 selfservice" id="{{ self_service.name }}">
+        <a href="/publish?name={{ self_service.name }}" class="text-decoration-none">
+            <div class="card m-1 shadow-sm d-flex flex-column h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ self_service.name }}</h5>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                            id="flexSwitchCheckChecked{{ loop.index }}" {{ "checked" if self_service.published else ""
+                            }} {{ "disabled" if not self_service.published else "" }}
+                            onchange="confirmUnpublish('{{ self_service.name }}', this)">
+                        <label class="form-check-label" for="flexSwitchCheckChecked{{ loop.index }}">Published</label>
+                    </div>
+                    {% if self_service.description %}
+                    <p class="mb-auto">{{ self_service.description|replace('\n', ' ')|default('No
+                        description')|truncate(100) }}...</p>
+                    {% else %}
+                    <p class="mb-auto">No description</p>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+    </div>
+    {% else %}
+    <div class="col-md-4 mb-3 selfservice" id="{{ self_service.name }}">
+        <a href="/selfservice/{{ self_service.name }}" class="text-decoration-none">
+            <div class="card m-1 shadow-sm d-flex flex-column h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ self_service.name }}</h5>
+                    {% if self_service.description %}
+                    <p class="mb-auto">{{ self_service.description|replace('\n', ' ')|default('No
+                        description')|truncate(100) }}</p>
+                    {% else %}
+                    <p class="mb-auto">No description</p>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+<!-- Modal definition -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Confirm Unpublish</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to unpublish this self service? <br>
+                <!-- Self service name will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmUnpublish">Unpublish</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{% if request.path == "/runbooks" %}
+<script>
+    function updatePublishedStatus(name, status) {
+        fetch('/updatePublishedStatus', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: name, status: status }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+    }
+    function confirmUnpublish(name, checkbox) {
+        var unpublishConfirmed = false;
+
+        if (!checkbox.checked) {
+            // Update the modal's content
+            $('#confirmModal .modal-body').text('Are you sure you want to unpublish this self service? ' + name);
+
+            // If the checkbox is being unchecked, show the confirmation modal
+            $('#confirmModal').modal('show');
+
+            // When the "Unpublish" button is clicked, update the published status
+            $('#confirmUnpublish').on('click', function () {
+                updatePublishedStatus(name, false);
+                checkbox.disabled = true; // Disable the checkbox
+                $('#confirmModal').modal('hide');
+                unpublishConfirmed = true;
+            });
+
+            // When the "Cancel" button is clicked, recheck and enable the checkbox
+            $('.btn-secondary').on('click', function () {
+                checkbox.checked = true;
+                checkbox.disabled = false; // Enable the checkbox
+            });
+
+            // When the modal is closed (either by clicking outside of it, pressing the escape key, or clicking the close button), recheck and enable the checkbox
+            $('#confirmModal').on('hidden.bs.modal', function () {
+                if (!unpublishConfirmed) {
+                    checkbox.checked = true;
+                    checkbox.disabled = false; // Enable the checkbox
+                }
+            });
+        } else {
+            // If the checkbox is being checked, update the published status without confirmation
+            updatePublishedStatus(name, true);
+            checkbox.disabled = false; // Enable the checkbox
+        }
+    }
+</script>
+{% endif %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+    // Search function for the search bar above the cards on the page search based on id hide the cards that don't match
+    $(document).ready(function () {
+        $("#search").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $(".selfservice").each(function () {
+                if ($(this).text().toLowerCase().indexOf(value) > -1) {
+                    $(this).css('display', ''); // Show the card
+                } else {
+                    $(this).css('display', 'none'); // Hide the card
+                }
+            });
+        });
+    });
+</script>
+
+{% endblock %}
