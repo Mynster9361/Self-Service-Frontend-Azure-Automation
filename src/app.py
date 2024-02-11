@@ -407,7 +407,7 @@ def logs():
 
     return render_template('logs.html', data=data, types=types, user=session["user"])
 
-@app.route("/getAToken")  # Its absolute URL must match your app's redirect_uri set in AAD
+@app.route(os.environ.get('REDIRECT_PATH'))  # Its absolute URL must match your app's redirect_uri set in AAD
 def authorized():
     try:
         result = _build_msal_app().acquire_token_by_auth_code_flow(
