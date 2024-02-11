@@ -1,5 +1,4 @@
-![Logo](https://github.com/Mynster9361/Self-Service-Frontend-Azure-Automation/blob/main/images/banner-192.png?raw=true)
-# Self-Service-Frontend-Azure-Automation
+# <img width="50px" src="./images/banner-192.png" alt="Self-Service-Frontend-Azure-Automation"></img> Self-Service-Frontend-Azure-Automation
 This is a Python-based web application that provides a self-service portal for Azure automation.
 
 ## 🛠️ Prerequisites
