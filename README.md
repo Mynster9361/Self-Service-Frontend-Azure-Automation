@@ -2,9 +2,6 @@
 # Self-Service-Frontend-Azure-Automation
 This is a Python-based web application that provides a self-service portal for Azure automation.
 
-## 🔗 Links
-[![linkedin](https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555)](https://www.linkedin.com/in/mortenmynster/)
-
 ## 🛠️ Prerequisites
 
 Setup an app registration in Azure.
@@ -77,6 +74,6 @@ docker-compose up
 ![Logs](https://github.com/Mynster9361/Self-Service-Frontend-Azure-Automation/blob/main/images/Logs.png?raw=true)
 
 ## Authors
-
 - [@Mynster9361](https://github.com/Mynster9361)
+- [![linkedin](https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555)](https://www.linkedin.com/in/mortenmynster/)
 
