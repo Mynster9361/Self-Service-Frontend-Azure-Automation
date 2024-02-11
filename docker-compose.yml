@@ -1,7 +1,7 @@
 version: "3"
 services:
   azure_self_service_portal:
-    build: ./
+    image: morten9361/self-service-frontend-azure-automation:latest
     ports:
       - 8000:8000
     environment:
