@@ -1,7 +1,8 @@
-FROM python:slim
+FROM python:alpine3.19
 
-RUN apt-get update && \
-    apt-get install -y python3 python3-pip
+RUN apk update
+RUN apk add python3
+RUN apk add py3-pip
 
 COPY ./src /app/src
 COPY ./requirements.txt /app
