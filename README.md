@@ -24,6 +24,8 @@ Setup an app registration in Azure.
 - REDIRECT_PATH
 
 ## Usage / Installation
+Docker repo:\
+https://hub.docker.com/repository/docker/morten9361/self-service-frontend-azure-automation/general \
 Create a docker-compose.yml file and fill in the data below.
 ````
 version: "3"
