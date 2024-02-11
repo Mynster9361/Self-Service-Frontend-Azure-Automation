@@ -73,6 +73,6 @@ docker-compose up
 ![Logs](./images/Logs.png)
 
 ## Authors
-- [@Mynster9361](https://github.com/Mynster9361)
+[@Mynster9361](https://github.com/Mynster9361) \
 [![linkedin](https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555)](https://www.linkedin.com/in/mortenmynster/)
 
