@@ -56,7 +56,7 @@ docker-compose up
 ````
 
 ## 🚀 Features
-
+- Light and Dark mode - Default is Light
 - Publish some of your powershell runbooks as selfservices for easy to use front-end for your users.
 - Users can only run the self services they have permission to.
 - Users can only see their own previous jobs run.
