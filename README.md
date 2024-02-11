@@ -64,13 +64,13 @@ docker-compose up
 
 ## Screenshots
 
-![front-page](https://github.com/Mynster9361/Self-Service-Frontend-Azure-Automation/blob/main/images/front-page.png?raw=true)
-![self-service-overview](https://github.com/Mynster9361/Self-Service-Frontend-Azure-Automation/blob/main/images/self-service-overview.png?raw=true)
-![self-service](https://github.com/Mynster9361/Self-Service-Frontend-Azure-Automation/blob/main/images/self-service.png?raw=true)
-![jobs](https://github.com/Mynster9361/Self-Service-Frontend-Azure-Automation/blob/main/images/jobs.png?raw=true)
-![All-Runbooks](https://github.com/Mynster9361/Self-Service-Frontend-Azure-Automation/blob/main/images/All-Runbooks.png?raw=true)
-![publish-runbook](https://github.com/Mynster9361/Self-Service-Frontend-Azure-Automation/blob/main/images/publish-runbook.png?raw=true)
-![Logs](https://github.com/Mynster9361/Self-Service-Frontend-Azure-Automation/blob/main/images/Logs.png?raw=true)
+![front-page](./images/front-page.png)
+![self-service-overview](./images/self-service-overview.png)
+![self-service](./images/self-service.png)
+![jobs](./images/jobs.png)
+![All-Runbooks](./images/All-Runbooks.png)
+![publish-runbook](./images/publish-runbook.png)
+![Logs](./images/Logs.png)
 
 ## Authors
 - [@Mynster9361](https://github.com/Mynster9361)
