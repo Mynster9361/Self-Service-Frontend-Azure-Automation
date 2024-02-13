@@ -3,9 +3,9 @@ from datetime import datetime
 from werkzeug.middleware.proxy_fix import ProxyFix
 from functools import wraps
 from waitress import serve
-from azure import get_token, run_runbook, get_job, get_scheduled_job, update_all_runbooks, remove_scheduled_job
+from azuresdk import AzureAutomationClient
 from auth import has_access, check_authorization, admin_required
-from data import load_selfservices_data, load_json_file, write_json_file, create_empty_json_file
+from data import load_selfservices_data, load_json_file, write_json_file
 from log import parse_log_entries
 import json
 import logging
@@ -71,7 +71,6 @@ def selfservice(name):
 @app.route('/selfservice/<name>/run', methods=['POST'])
 @login_required
 def run_selfservice(name):
-    #return session["user"]
     # Get all form data
     form_data = request.form.to_dict()
     # check if the user roles has access to this self service
@@ -80,29 +79,30 @@ def run_selfservice(name):
     if not check_authorization(runbook, session["user"]["roles"]):
         return render_template('unauthorized.html', user=session["user"])
     
-    try:
-        # Get a token
-        token = get_token()
-    except Exception as e:
-        return f"Error: {e}"
+    client = AzureAutomationClient()
+    if 'scheduleDateTime' in form_data:
+        # Convert the scheduleDateTime to a datetime object
+        form_data['scheduleDateTime'] = datetime.strptime(form_data['scheduleDateTime'], '%Y-%m-%dT%H:%M')
+        # Run the runbook
+        response_json = client.create_job_schedule(name, form_data, form_data['scheduleDateTime'])
+        logging.info("Schedule ---split--- " + str(session["user"]["preferred_username"]) + " ---split--- Self service Scheduled with these params: " + str(form_data))
+    else:
+        response_json = client.run_runbook(name, form_data)
+        logging.info("Execute ---split--- " + str(session["user"]["preferred_username"]) + " ---split--- Self service run with these params: " + str(form_data))
 
-    # Check if the token is "400"
-    if token == 400:
-        return "Error: The token request returned status code 400"
-    # Define the body for the request
-    run = run_runbook(name, form_data, token)
-    logging.info("Execute ---split--- " + str(session["user"]["preferred_username"]) + " ---split--- Self service run with these params: " + str(form_data))
+    # Parse the JSON response back into a dictionary
+    response = json.loads(response_json)
     # Add the current date and time to 'startTime'
-    run['properties']['startTime'] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+    response['start_time'] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
     # Add the preferredname to the properties
-    run['properties']['startedBy'] = session["user"]["preferred_username"]
+    response['started_by'] = session["user"]["preferred_username"]
     # Load the existing jobs data
     data = load_json_file('selfservices/jobs.json')
     # If data is a dictionary, convert it to a list
     if isinstance(data, dict):
         data = [data]
     # Append new data
-    data.append(run)
+    data.append(response)
     # Write the data back to the file
     write_json_file('selfservices/jobs.json', data)
     return redirect(url_for('jobs'))
@@ -117,33 +117,31 @@ def jobs():
 
     # Filter the jobs based on the startedBy property, unless the user is an admin
     if 'admin' not in session["user"]["roles"]:
-        data = [job for job in data if 'properties' in job and 'startedBy' in job['properties'] and job['properties']['startedBy'] == session["user"]["preferred_username"]]
+        data = [job for job in data if 'startedBy' in job and job['startedBy'] == session["user"]["preferred_username"]]
 
     # Convert the datetime strings to datetime objects
     for job in data:
-        if 'properties' in job:
-            if 'startTime' in job['properties'] and job['properties']['startTime']:
-                try:
-                    job['properties']['startTime'] = datetime.strptime(job['properties']['startTime'], '%Y-%m-%dT%H:%M:%S')
-                except ValueError:
-                    job['properties']['startTime'] = None
-            if 'endTime' in job['properties'] and job['properties']['endTime']:
-                try:
-                    job['properties']['endTime'] = datetime.strptime(job['properties']['endTime'], '%Y-%m-%dT%H:%M:%S')
-                except ValueError:
-                    job['properties']['endTime'] = None
-            if 'output' in job:
-                for output in job['output']:
-                    if 'time' in output and output['time']:
-                        output['time'] = datetime.strptime(output['time'], '%Y-%m-%dT%H:%M:%S')
+        if 'startTime' in job and job['startTime'] and 'endTime' in job and job['endTime']:
+            start_time = datetime.strptime(job['startTime'], '%Y-%m-%d %H:%M:%S')
+            end_time = datetime.strptime(job['endTime'], '%Y-%m-%d %H:%M:%S')
+        if 'output' in job:
+            for output in job['output']:
+                if 'time' in output and output['time']:
+                    try:
+                        output['time'] = datetime.strptime(output['time'], '%Y-%m-%d %H:%M:%S')
+                    except ValueError:
+                        output['time'] = None
 
-            # If it's a scheduled job, convert the scheduleDateTime to a datetime object
-            if job['type'] == 'Microsoft.Automation/AutomationAccounts/JobSchedules':
-                if 'scheduleDateTime' in job['properties']['parameters'] and job['properties']['parameters']['scheduleDateTime']:
-                    job['properties']['parameters']['scheduleDateTime'] = datetime.strptime(job['properties']['parameters']['scheduleDateTime'], '%Y-%m-%d %H:%M')
+        # If it's a scheduled job, convert the scheduleDateTime to a datetime object
+        if job['type'] == 'Microsoft.Automation/AutomationAccounts/JobSchedules':
+            if 'scheduleDateTime' in job['parameters'] and job['parameters']['scheduleDateTime']:
+                try:
+                    job['parameters']['scheduleDateTime'] = datetime.strptime(job['parameters']['scheduleDateTime'], '%Y-%m-%d %H:%M')
+                except ValueError:
+                    job['parameters']['scheduleDateTime'] = None
 
     # Sort the jobs by startTime, with N/A values at the top and other values from newest to oldest
-    data = sorted(data, key=lambda job: job['properties']['startTime'] if 'properties' in job and 'startTime' in job['properties'] and job['properties']['startTime'] else datetime.min, reverse=True)
+    data = sorted(data, key=lambda job: job['startTime'] if 'startTime' in job and job['startTime'] else datetime.min, reverse=True)
     
     return render_template('jobs.html', data=data, user=session["user"])
 
@@ -152,44 +150,16 @@ def jobs():
 def update_job():
     # Open jobs.json to display the jobs
     data = load_json_file('selfservices/jobs.json')
-    try:
-        # Get a token
-        token = get_token()
-    except Exception as e:
-        return f"Error: {e}"
-
-    # Check if the token is "400"
-    if token == 400:
-        return "Error: The token request returned status code 400"
+    client = AzureAutomationClient()
     
     # foreach job in jobs.json that has provisioningState == 'Processing' update data with the latest data from the job
     for job in data:
-        if 'properties' in job:
-            if 'provisioningState' in job['properties'] and job['properties']['provisioningState'] == 'Processing':
-                job_details = get_job(job['name'], token)
-                # preserve startedBy
-                job_details['properties']['startedBy'] = job['properties']['startedBy']
-                # Update the job data
-                job.update(job_details)
-
-        if 'type' in job and job['type'] == 'Microsoft.Automation/AutomationAccounts/JobSchedules' and 'properties' in job:
-            # Parse the startTime to a datetime object
-            start_time = datetime.strptime(job['properties']['startTime'], "%Y-%m-%dT%H:%M:%S")
-            # Get the current time
-            current_time = datetime.now()
-            # Initialize job_details as an empty dictionary
-            job_details = {}
-            # Only get the job details if the start time has passed
-            if start_time < current_time:
-                runbookName = job['properties']['runbook']['name']
-                schduled_job = get_scheduled_job(job['properties']['jobScheduleId'], runbookName, token)
-                if schduled_job:
-                    # Update the job data
-                    job_details = get_job(schduled_job, token)
-                    job_details['properties']['startedBy'] = job['properties']['startedBy']
-                    # Remove the Schduled job from Azure
-                    remove_scheduled_job(job['properties']['jobScheduleId'], token)
-
+        if 'provisioning_state' in job and job['provisioning_state'] == 'Processing':
+            # Get the job details
+            job_details = client.get_job(job['job_id'])
+            # preserve startedBy
+            if 'started_by' in job:
+                job_details['started_by'] = job['started_by']
             # Update the job data
             job.update(job_details)
 
@@ -197,6 +167,7 @@ def update_job():
     write_json_file('selfservices/jobs.json', data)
 
     return redirect(url_for('jobs'))
+
 
 @app.route('/runbooks')
 @login_required
@@ -238,8 +209,11 @@ def runbooks():
 @admin_required
 def update_runbooks():
     logging.info("Update ---split--- " + str(session["user"]["preferred_username"]) + " ---split--- Runbook update triggered.")
-    result = update_all_runbooks()
-    logging.info("Update ---split--- " + str(session["user"]["preferred_username"]) + " ---split--- Runbook update completed with message: " + result)
+    client = AzureAutomationClient()
+    result = client.get_runbooks()
+    # export result to runbookprops.json
+    write_json_file("selfservices/runbookprops.json", result)
+    logging.info("Update ---split--- " + str(session["user"]["preferred_username"]) + " ---split--- Runbook update completed.")
 
     # Add a cache-busting query parameter to the URL
     return redirect(url_for('runbooks'))

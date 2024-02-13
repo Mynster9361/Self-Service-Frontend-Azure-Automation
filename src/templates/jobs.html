@@ -33,7 +33,6 @@ Jobs
                 <th scope="col">Status</th>
                 <th scope="col">Created Time</th>
                 <th scope="col">End Time</th>
-                <th scope="col">Duration</th>
                 {% if 'admin' in user["roles"] %}
                 <th scope="col">Started By</th>
                 {% endif %}
@@ -41,81 +40,53 @@ Jobs
         </thead>
         <tbody>
             {% if data %}
-                {% for job in data %}
-                <tr data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" class="accordion-toggle">
-                    <td>{{ job.properties.jobId if 'properties' in job and 'jobId' in job.properties else 'Scheduled' }}</td>
-                    <td>{{ job.properties.runbook.name if 'properties' in job and 'runbook' in job.properties else '' }}</td>
-                    <td>{{ job.properties.parameters if 'properties' in job and 'parameters' in job.properties else '' }}</td>
-                    <td>{{ job.properties.status if 'properties' in job and 'status' in job.properties else 'Scheduled' }}</td>
-                    <td>{{ job.properties.startTime if 'properties' in job and 'startTime' in job.properties else '' }}</td>
-                    <td>{{ job.properties.endTime if 'properties' in job and 'endTime' in job.properties else '' }}</td>
-                    <td>
-                        {% macro format_duration(duration) %}
-                        {% set seconds = duration % 60 %}
-                        {% set minutes = ((duration - seconds) / 60) % 60 %}
-                        {% set hours = ((duration - (minutes * 60 + seconds)) / 3600) % 24 %}
-                        {% set days = (duration - (hours * 3600 + minutes * 60 + seconds)) / 86400 %}
-                
-                        {% if days > 0 %}
-                        {{ days|int }} day{{ 's' if days > 1 }}
-                        {% endif %}
-                        {% if hours > 0 %}
-                        {{ hours|int }} hour{{ 's' if hours > 1 }}
-                        {% endif %}
-                        {% if minutes > 0 %}
-                        {{ minutes|int }} minute{{ 's' if minutes > 1 }}
-                        {% endif %}
-                        {% if seconds > 0 %}
-                        {{ seconds|int }} second{{ 's' if seconds > 1 }}
-                        {% endif %}
-                        {% endmacro %}
-                
-                        {% if 'properties' in job and 'endTime' in job.properties and 'startTime' in job.properties and job.properties.endTime is not none and job.properties.startTime is not none %}
-                        {% set duration = (job.properties.endTime - job.properties.startTime).total_seconds() %}
-                        {{ format_duration(duration) }}
-                        {% else %}
-                        N/A
-                        {% endif %}
-                    </td>
-                    {% if 'admin' in user["roles"] %}
-                    <!-- Show the user who started the job -->
-                    <td>{{ job.properties.startedBy if 'properties' in job and 'startedBy' in job.properties else '' }}</td>
-                    {% endif %}
-                </tr>
-                <tr>
-                    <td colspan="6" class="hiddenRow">
-                        <div class="accordion-body collapse" id="collapse{{ loop.index }}">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">#</th>
-                                        <th scope="col">Time</th>
-                                        <th scope="col">Log Entry</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% if job.output is defined %}
-                                    {% set line_number = [0] %}
-                                    {% for output in job.output %}
-                                    {% set _ = line_number.append(line_number.pop() + 1) %}
-                                    <tr>
-                                        <th scope="row">{{ line_number[0] }}</th>
-                                        <td>{{ output.time }}</td>
-                                        <td>{{ output.summary }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                    {% else %}
-                                    <tr>
-                                        <th scope="row"> 1 </th>
-                                        <td colspan="2">No output yet</td>
-                                    </tr>
-                                    {% endif %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
+            {% for job in data %}
+            <tr data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" class="accordion-toggle">
+                <td>{{ job.job_id if 'job_id' in job else 'Scheduled' }}</td>
+                <td>{{ job.runbook.name if 'runbook' in job and 'name' in job.runbook else '' }}</td>
+                <td>{{ job.parameters if 'parameters' in job else '' }}</td>
+                <td>{{ job.status if 'status' in job else 'Scheduled' }}</td>
+                <td>{{ job.start_time if 'start_time' in job else '' }}</td>
+                <td>{{ job.end_time if 'end_time' in job else '' }}</td>
+                {% if 'admin' in user["roles"] %}
+                <!-- Show the user who started the job -->
+                <td>{{ job.started_by if 'started_by' in job else '' }}</td>
+                {% endif %}
+            </tr>
+            <tr>
+                <td colspan="7" class="hiddenRow">
+                    <div class="accordion-body collapse" id="collapse{{ loop.index }}">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Time</th>
+                                    <th scope="col">Log Entry</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if job.output is defined %}
+                                {% set line_number = [0] %}
+                                {% for output in job.output %}
+                                {% set _ = line_number.append(line_number.pop() + 1) %}
+                                <tr>
+                                    <th scope="row">{{ line_number[0] }}</th>
+                                    <td>{{ output.time }}</td>
+                                    <td>{{ output.summary }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <th scope="row"> 1 </th>
+                                    <td colspan="2">No output yet</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
             {% else %}
             <tr>
                 <td colspan="8">No entries found</td>

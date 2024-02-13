@@ -4,3 +4,5 @@ Werkzeug==3.0.1
 waitress==3.0.0
 pytz==2024.1
 requests==2.31.0
+azure-identity==1.15.0
+azure-mgmt-automation==1.0.0
